@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%; /* evita el zoom de texto en iOS al rotar */
+  }
+
+  body {
+    @apply overflow-x-hidden;
+  }
+
+  /* Evita que iOS haga zoom al enfocar un input (fuente < 16px) */
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+}
