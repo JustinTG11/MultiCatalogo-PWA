@@ -32,7 +32,7 @@ const Navbar = ({ toggleSidebar }: NavbarProps) => {
           </svg>
         </button>
         <h2 className="text-slate-600 font-medium text-base md:text-lg hidden sm:block">
-          {user?.rol === "admin" ? "Panel de Administración" : "Tienda MultiCatálogo"}
+          {user?.rol === "admin" ? "Panel de Administración" : "Justin Tomalá"}
         </h2>
       </div>
 

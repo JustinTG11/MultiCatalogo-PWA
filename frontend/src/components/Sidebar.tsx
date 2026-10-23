@@ -93,8 +93,8 @@ const Sidebar = ({ isCollapsed, isMobileOpen, closeMobileMenu }: SidebarProps) =
       `}
     >
       <div className={`p-4 md:p-6 text-xl font-bold border-b border-slate-700 flex items-center ${isCollapsed ? 'md:justify-center' : 'justify-start'} whitespace-nowrap`}>
-        <span className="md:hidden">MultiCatálogo</span>
-        <span className="hidden md:inline">{isCollapsed ? "MC" : "MultiCatálogo"}</span>
+        <span className="md:hidden">Justin Tomalá</span>
+        <span className="hidden md:inline">{isCollapsed ? "JT" : "Justin Tomalá"}</span>
       </div>
 
       <nav className="flex-1 p-3 space-y-2 overflow-y-auto">

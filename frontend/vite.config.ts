@@ -13,8 +13,8 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "offline.html"],
       manifest: {
-        name: "MultiCatálogo",
-        short_name: "MultiCatálogo",
+        name: "Justin Tomalá",
+        short_name: "JT",
         description: "Tienda cosmética con red de ventas multinivel",
         theme_color: "#ec4899",
         background_color: "#ffffff",
