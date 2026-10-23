@@ -39,4 +39,11 @@ var (
 	ErrPedidoNoEncontrado = errors.New("pedido no encontrado")
 	ErrTransicionInvalida = errors.New("transición de estado inválida")
 	ErrSinComisiones      = errors.New("no hay comisiones pendientes para liquidar")
+
+	// Errores al asignar el referente de un usuario (los controladores los traducen a 400/404).
+	ErrUsuarioNoEncontrado = errors.New("usuario no encontrado")
+	ErrUsuarioSinNodo      = errors.New("el usuario no tiene un nodo en la red de referidos")
+	ErrReferenteNoExiste   = errors.New("no existe ningún referente con ese código")
+	ErrReferenteInvalido   = errors.New("un usuario no puede ser su propio referente ni se puede cambiar el referente de la raíz")
+	ErrCicloReferido       = errors.New("ese referente pertenece a la red de este usuario: crearía un ciclo")
 )

@@ -12,7 +12,7 @@
 ## Endpoints (rol)
 - Públicos: `POST /api/login`, `POST /api/register`, `GET /api/productos` (`?q=` busca), `GET /api/productos/:id`
 - Cliente (JWT): `POST /api/checkout`, `GET /api/pedidos/mios`, `GET /api/pedidos/:id` (solo dueño/admin), `GET /api/red/mia`, `GET /api/comisiones/mias`, `GET /api/liquidaciones/mias`
-- Admin (JWT + rol admin): productos `POST|PUT|DELETE /api/productos[/:id]` y `GET /api/admin/productos?q&page&limit`; pedidos `GET /api/pedidos`, `PATCH /api/pedidos/:id/estado`; liquidaciones `POST|GET /api/liquidaciones`; `GET /api/admin/usuarios`; reportes `GET /api/reportes/{resumen,top-productos,top-referidos,comisiones-pendientes}`
+- Admin (JWT + rol admin): productos `POST|PUT|DELETE /api/productos[/:id]` y `GET /api/admin/productos?q&page&limit`; pedidos `GET /api/pedidos`, `PATCH /api/pedidos/:id/estado`; liquidaciones `POST|GET /api/liquidaciones`; `GET /api/admin/usuarios`, `PUT /api/admin/usuarios/:id/referente` (asignar/cambiar/quitar referente); reportes `GET /api/reportes/{resumen,top-productos,top-referidos,comisiones-pendientes}`
 - (Los alias `/api/admin/pedidos`, `/api/admin/liquidaciones` y `/api/admin/productos` apuntan a los mismos handlers; el frontend usa esos.)
 
 ## Frontend (React 19 + Vite + Tailwind + Router 7)

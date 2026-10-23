@@ -17,6 +17,10 @@ type UsuarioRepository interface {
 	CrearUsuario(req models.RegisterRequest) (models.Usuario, error)
 	ReferidoPorCodigo(codigo string) (int, bool, error)
 	GetUsuarios(q string, page, limit int) ([]models.UsuarioResumen, int, error)
+	// AsignarReferente cambia quién invitó al usuario (codigo vacío = dejarlo sin referente).
+	// Con retroactivo=true genera las comisiones pendientes de sus pedidos anteriores que aún no tengan.
+	// Devuelve cuántas comisiones se generaron.
+	AsignarReferente(usuarioID int, codigo string, retroactivo bool) (int, error)
 }
 
 // ProductoRepository: catálogo.

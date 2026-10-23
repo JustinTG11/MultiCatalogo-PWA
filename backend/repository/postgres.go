@@ -1415,6 +1415,181 @@ func (r *PostgresRepository) GetComisionesMias(referidoID int) ([]models.Comisio
 	return comisiones, resumen, nil
 }
 
+// AsignarReferente mueve el nodo del usuario bajo otro referente (por su código) en una transacción:
+// actualiza parent_id y recalcula el nivel del usuario y de toda su red. Rechaza ciclos (que el nuevo
+// referente sea el propio usuario o alguien de su red). Con retroactivo=true crea las comisiones
+// pendientes de sus pedidos anteriores (no cancelados) que todavía no tengan comisiones.
+func (r *PostgresRepository) AsignarReferente(usuarioID int, codigo string, retroactivo bool) (int, error) {
+	ctx, cancel := contexto()
+	defer cancel()
+
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("iniciar transacción: %w", err)
+	}
+	defer func() {
+		rbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = tx.Rollback(rbCtx)
+	}()
+
+	// 1) Nodo del usuario en la red.
+	var miNodo *int
+	err = tx.QueryRow(ctx, `SELECT referido_id FROM usuarios WHERE id = $1`, usuarioID).Scan(&miNodo)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, ErrUsuarioNoEncontrado
+	}
+	if err != nil {
+		return 0, fmt.Errorf("buscar usuario: %w", err)
+	}
+	if miNodo == nil {
+		return 0, ErrUsuarioSinNodo
+	}
+	if *miNodo == 0 {
+		return 0, ErrReferenteInvalido // la raíz ("Tú") no tiene referente
+	}
+
+	// 2) Nuevo referente (opcional).
+	var padreID *int
+	nivelNuevo := 1
+	codigo = strings.TrimSpace(codigo)
+	if codigo != "" {
+		var pid, pnivel int
+		err = tx.QueryRow(ctx, `SELECT id, nivel FROM referidos WHERE UPPER(codigo) = UPPER($1)`, codigo).Scan(&pid, &pnivel)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, ErrReferenteNoExiste
+		}
+		if err != nil {
+			return 0, fmt.Errorf("buscar referente: %w", err)
+		}
+		if pid == *miNodo {
+			return 0, ErrReferenteInvalido
+		}
+		// Anti-ciclo: el nuevo referente no puede estar dentro de la red del propio usuario.
+		var ciclo bool
+		err = tx.QueryRow(ctx,
+			`WITH RECURSIVE sub AS (
+			     SELECT id FROM referidos WHERE parent_id = $1
+			     UNION ALL
+			     SELECT r.id FROM referidos r JOIN sub s ON r.parent_id = s.id
+			 )
+			 SELECT EXISTS (SELECT 1 FROM sub WHERE id = $2)`, *miNodo, pid).Scan(&ciclo)
+		if err != nil {
+			return 0, fmt.Errorf("comprobar ciclo: %w", err)
+		}
+		if ciclo {
+			return 0, ErrCicloReferido
+		}
+		padreID = &pid
+		nivelNuevo = pnivel + 1
+	}
+
+	// 3) Mover el nodo y recalcular el nivel de todo su subárbol.
+	if _, err := tx.Exec(ctx, `UPDATE referidos SET parent_id = $1 WHERE id = $2`, padreID, *miNodo); err != nil {
+		return 0, fmt.Errorf("actualizar referente: %w", err)
+	}
+	if _, err := tx.Exec(ctx,
+		`WITH RECURSIVE sub AS (
+		     SELECT id, $1::int AS nivel FROM referidos WHERE id = $2
+		     UNION ALL
+		     SELECT r.id, s.nivel + 1 FROM referidos r JOIN sub s ON r.parent_id = s.id
+		 )
+		 UPDATE referidos r SET nivel = sub.nivel FROM sub WHERE r.id = sub.id`, nivelNuevo, *miNodo); err != nil {
+		return 0, fmt.Errorf("recalcular niveles: %w", err)
+	}
+
+	// 4) Comisiones retroactivas de pedidos anteriores que no generaron ninguna (p. ej. cuando no tenía referente).
+	generadas := 0
+	if retroactivo && padreID != nil {
+		type pedidoSinComision struct {
+			id    int
+			total float64
+		}
+		prows, err := tx.Query(ctx,
+			`SELECT p.id, p.total::float8 FROM pedidos p
+			  WHERE p.usuario_id = $1 AND p.estado <> 'cancelado'
+			    AND NOT EXISTS (SELECT 1 FROM comisiones c WHERE c.pedido_id = p.id)
+			  ORDER BY p.id`, usuarioID)
+		if err != nil {
+			return 0, fmt.Errorf("buscar pedidos anteriores: %w", err)
+		}
+		var pedidos []pedidoSinComision
+		for prows.Next() {
+			var pc pedidoSinComision
+			if err := prows.Scan(&pc.id, &pc.total); err != nil {
+				prows.Close()
+				return 0, fmt.Errorf("leer pedido: %w", err)
+			}
+			pedidos = append(pedidos, pc)
+		}
+		prows.Close()
+		if err := prows.Err(); err != nil {
+			return 0, fmt.Errorf("leer pedidos: %w", err)
+		}
+
+		// Ascendentes (hasta 3 niveles) ya con el nuevo referente.
+		arows, err := tx.Query(ctx,
+			`WITH RECURSIVE ascendentes AS (
+			     SELECT r.parent_id AS id, 1 AS distancia
+			       FROM referidos r
+			      WHERE r.id = $1 AND r.parent_id IS NOT NULL
+			     UNION ALL
+			     SELECT r.parent_id, a.distancia + 1
+			       FROM referidos r
+			       JOIN ascendentes a ON r.id = a.id
+			      WHERE r.parent_id IS NOT NULL AND a.distancia < 3
+			 )
+			 SELECT id, distancia FROM ascendentes ORDER BY distancia`, *miNodo)
+		if err != nil {
+			return 0, fmt.Errorf("buscar ascendentes: %w", err)
+		}
+		type ascendente struct{ id, distancia int }
+		var ascendentes []ascendente
+		for arows.Next() {
+			var a ascendente
+			if err := arows.Scan(&a.id, &a.distancia); err != nil {
+				arows.Close()
+				return 0, fmt.Errorf("leer ascendente: %w", err)
+			}
+			ascendentes = append(ascendentes, a)
+		}
+		arows.Close()
+		if err := arows.Err(); err != nil {
+			return 0, fmt.Errorf("leer ascendentes: %w", err)
+		}
+
+		for _, p := range pedidos {
+			repartos := domain.RepartirComisiones(p.total, tasasComision)
+			for _, a := range ascendentes {
+				if a.distancia < 1 || a.distancia > len(repartos) {
+					continue
+				}
+				rep := repartos[a.distancia-1]
+				if _, err := tx.Exec(ctx,
+					`INSERT INTO comisiones (pedido_id, referido_id, nivel, porcentaje, monto, estado)
+					 VALUES ($1, $2, $3, $4, $5, 'pendiente')`,
+					p.id, a.id, a.distancia, rep.Porcentaje, rep.Monto); err != nil {
+					return 0, fmt.Errorf("insertar comisión retroactiva: %w", err)
+				}
+				// Mantiene el saldo acumulado del nodo igual que lo hace el checkout.
+				if _, err := tx.Exec(ctx,
+					`UPDATE referidos SET comisiones = comisiones + $1 WHERE id = $2`, rep.Monto, a.id); err != nil {
+					return 0, fmt.Errorf("acreditar saldo: %w", err)
+				}
+				generadas++
+			}
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, fmt.Errorf("confirmar transacción: %w", err)
+	}
+
+	// La red cambió: se invalidan los árboles cacheados.
+	r.cache.DeleteByPattern(PatronCacheRed)
+	return generadas, nil
+}
+
 // GetUsuarios lista usuarios (admin), paginado y con búsqueda opcional por email, nombre o código de referido (ILIKE).
 // Une con referidos para traer el código propio y quién invitó a cada usuario. Nunca devuelve password ni token.
 func (r *PostgresRepository) GetUsuarios(q string, page, limit int) ([]models.UsuarioResumen, int, error) {

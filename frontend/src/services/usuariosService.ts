@@ -24,3 +24,16 @@ export const getUsuariosAdmin = (q: string, page: number, limit: number): Promis
   apiFetch<Pagina<UsuarioAdmin>>(
     `/api/admin/usuarios?page=${page}&limit=${limit}${q ? `&q=${encodeURIComponent(q)}` : ""}`
   );
+
+export interface AsignarReferenteResultado {
+  ok: boolean;
+  comisiones_generadas: number;
+}
+
+// Cambia quién invitó al usuario (PUT /api/admin/usuarios/:id/referente). Código vacío = sin referente.
+// retroactivo: genera las comisiones pendientes de sus pedidos anteriores que aún no tengan.
+export const asignarReferente = (usuarioId: number, codigo: string, retroactivo: boolean) =>
+  apiFetch<AsignarReferenteResultado>(`/api/admin/usuarios/${usuarioId}/referente`, {
+    method: "PUT",
+    body: { codigo_referido: codigo.trim(), retroactivo },
+  });

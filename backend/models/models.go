@@ -175,6 +175,13 @@ type Liquidacion struct {
 	PagadaEn       *time.Time `json:"pagada_en,omitempty"`
 }
 
+// AsignarReferenteRequest es el cuerpo de PUT /api/admin/usuarios/:id/referente (admin).
+// Codigo vacío quita el referente. Retroactivo genera comisiones de pedidos anteriores del usuario.
+type AsignarReferenteRequest struct {
+	Codigo      string `json:"codigo_referido"`
+	Retroactivo bool   `json:"retroactivo"`
+}
+
 // LiquidarRequest es el cuerpo para POST /api/liquidaciones (admin).
 type LiquidarRequest struct {
 	ReferidoID *int `json:"referido_id"` // puntero: el nodo raíz "Tú" tiene id 0

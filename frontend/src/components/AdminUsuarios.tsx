@@ -1,7 +1,7 @@
 // src/components/AdminUsuarios.tsx
 // Solo admin: quién se registró, si ya creó su contraseña, su código de referido y quién lo invitó.
 import { useEffect, useState } from "react";
-import { getUsuariosAdmin, type UsuarioAdmin } from "../services/usuariosService";
+import { asignarReferente, getUsuariosAdmin, type UsuarioAdmin } from "../services/usuariosService";
 import Paginacion from "./Paginacion";
 
 const LIMIT = 10;
@@ -14,6 +14,16 @@ const AdminUsuarios = () => {
   const [q, setQ] = useState(""); // término ya aplicado (con debounce)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [recarga, setRecarga] = useState(0); // se incrementa para volver a pedir la lista
+  const [mensaje, setMensaje] = useState("");
+
+  // Edición del referente (modal)
+  const [editando, setEditando] = useState<UsuarioAdmin | null>(null);
+  const [codigo, setCodigo] = useState("");
+  const [retroactivo, setRetroactivo] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [errorModal, setErrorModal] = useState("");
+  const [candidatos, setCandidatos] = useState<UsuarioAdmin[]>([]); // sugerencias de códigos
 
   // Debounce: espera 300 ms tras escribir y vuelve a la página 1
   useEffect(() => {
@@ -39,7 +49,42 @@ const AdminUsuarios = () => {
     return () => {
       activo = false;
     };
-  }, [q, page]);
+  }, [q, page, recarga]);
+
+  // Sugerencias de referentes: los usuarios con código de referido (hasta 100).
+  useEffect(() => {
+    getUsuariosAdmin("", 1, 100)
+      .then((r) => setCandidatos(r.data.filter((u) => u.codigo_referido)))
+      .catch(() => setCandidatos([]));
+  }, [recarga]);
+
+  const abrirEditor = (u: UsuarioAdmin) => {
+    setEditando(u);
+    setCodigo(u.referido_por_codigo ?? "");
+    setRetroactivo(true);
+    setErrorModal("");
+  };
+
+  const guardarReferente = async () => {
+    if (!editando) return;
+    setGuardando(true);
+    setErrorModal("");
+    try {
+      const r = await asignarReferente(editando.id, codigo, retroactivo);
+      setMensaje(
+        codigo.trim()
+          ? `Referente actualizado para ${editando.nombre || editando.email}.` +
+              (r.comisiones_generadas > 0 ? ` Se generaron ${r.comisiones_generadas} comisión(es) pendiente(s): ya aparecen en Liquidaciones.` : "")
+          : `${editando.nombre || editando.email} quedó sin referente.`
+      );
+      setEditando(null);
+      setRecarga((n) => n + 1);
+    } catch (e) {
+      setErrorModal(e instanceof Error ? e.message : "No se pudo guardar el referente");
+    } finally {
+      setGuardando(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -57,6 +102,14 @@ const AdminUsuarios = () => {
       />
 
       {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-200">{error}</div>}
+      {mensaje && (
+        <div className="bg-green-50 text-green-700 p-3 rounded-lg text-sm border border-green-200 flex justify-between gap-3">
+          <span>{mensaje}</span>
+          <button onClick={() => setMensaje("")} className="font-semibold" aria-label="Cerrar mensaje">
+            ✕
+          </button>
+        </div>
+      )}
 
       <section className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
         {loading ? (
@@ -122,6 +175,14 @@ const AdminUsuarios = () => {
                         ) : (
                           <span className="text-slate-400">Sin referente</span>
                         )}
+                        {u.rol !== "admin" && (
+                          <button
+                            onClick={() => abrirEditor(u)}
+                            className="mt-1 block text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
+                          >
+                            {u.referido_por_codigo || u.referido_por_nombre ? "Cambiar referente" : "Asignar referente"}
+                          </button>
+                        )}
                       </td>
                       <td className="p-2 whitespace-nowrap">{new Date(u.creado_en).toLocaleDateString()}</td>
                     </tr>
@@ -133,6 +194,61 @@ const AdminUsuarios = () => {
           </>
         )}
       </section>
+
+      {editando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md bg-white rounded-xl p-5 space-y-4 shadow-xl">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800">Referente de {editando.nombre || editando.email}</h2>
+              <p className="text-sm text-slate-500">
+                Escribe el código de quien lo invitó (ej. TU, U12). Déjalo vacío para quitar el referente.
+              </p>
+            </div>
+
+            <input
+              list="codigos-referente"
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value)}
+              placeholder="Código de referido"
+              autoFocus
+              className="w-full min-h-[44px] px-4 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <datalist id="codigos-referente">
+              {candidatos
+                .filter((c) => c.id !== editando.id)
+                .map((c) => (
+                  <option key={c.id} value={c.codigo_referido}>
+                    {c.nombre || c.email}
+                  </option>
+                ))}
+            </datalist>
+
+            <label className="flex items-start gap-2 text-sm text-slate-700">
+              <input type="checkbox" checked={retroactivo} onChange={(e) => setRetroactivo(e.target.checked)} className="mt-1" />
+              <span>Generar comisiones de sus pedidos anteriores (para que el referente aparezca en Liquidaciones).</span>
+            </label>
+
+            {errorModal && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-200">{errorModal}</div>}
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setEditando(null)}
+                disabled={guardando}
+                className="min-h-[44px] px-4 rounded-lg border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={guardarReferente}
+                disabled={guardando}
+                className="min-h-[44px] px-4 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {guardando ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

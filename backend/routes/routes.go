@@ -61,6 +61,7 @@ func SetupRoutes(app *fiber.App, d Dependencias) {
 
 	// Usuarios (solo admin), paginado
 	app.Get("/api/admin/usuarios", d.RequireAuth, d.RequireAdmin, d.Usuarios.GetUsuarios)
+	app.Put("/api/admin/usuarios/:id/referente", d.RequireAuth, d.RequireAdmin, d.Usuarios.AsignarReferente)
 
 	// Rutas de pedidos del usuario
 	app.Get("/api/pedidos/mios", d.RequireAuth, d.Pedidos.GetPedidosMios)
