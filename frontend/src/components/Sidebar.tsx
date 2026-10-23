@@ -3,19 +3,17 @@ import InstallButton from "./InstallButton";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/auth";
 
-// NUEVO: Agregamos la función a la interfaz de props
 interface SidebarProps {
   isCollapsed: boolean;
   isMobileOpen: boolean;
   closeMobileMenu: () => void;
 }
 
-// Definimos las opciones de navegación según el rol (Tema 5)
 interface NavItem {
   to: string;
   label: string;
   title: string;
-  icon: string; // ruta del icono SVG (stroke)
+  icon: string;
   soloAdmin?: boolean;
 }
 
@@ -43,7 +41,6 @@ const NAV_ITEMS: NavItem[] = [
     to: "/mi-red",
     label: "Mi Red",
     title: "Mi Red",
-
     icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
   },
   {
@@ -85,49 +82,56 @@ const NAV_ITEMS: NavItem[] = [
 const Sidebar = ({ isCollapsed, isMobileOpen, closeMobileMenu }: SidebarProps) => {
   const { user } = useAuth();
   const { pathname } = useLocation();
-
-  // Filtramos las opciones según el rol del usuario
   const items = NAV_ITEMS.filter((item) => !item.soloAdmin || user?.rol === "admin");
 
   return (
     <aside
       className={`
-        fixed inset-y-0 left-0 z-50 transform bg-blue-400 text-white flex flex-col transition-all duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-50 transform flex flex-col transition-all duration-300 ease-in-out
+        bg-slate-900 text-white
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         w-64
         md:relative md:translate-x-0
         ${isCollapsed ? "md:w-20" : "md:w-64"}
       `}
     >
-      <div className={`p-4 md:p-6 border-b border-slate-700 flex flex-col justify-center whitespace-nowrap ${isCollapsed ? 'md:items-center' : 'items-start'}`}>
-        <span className="text-xl font-bold md:hidden">MultiCatálogo</span>
-        <span className="hidden text-xl font-bold md:inline">{isCollapsed ? "MC" : "MultiCatálogo"}</span>
-        {!isCollapsed && <span className="text-sm font-medium text-white/80">Justin Tomalá</span>}
+      <div
+        className={`p-4 md:p-5 border-b border-slate-700/80 flex flex-col justify-center whitespace-nowrap ${
+          isCollapsed ? "md:items-center" : "items-start"
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-sm shrink-0">
+            MC
+          </div>
+          <div className={`${isCollapsed ? "md:hidden" : ""}`}>
+            <span className="text-base font-bold block leading-tight">MultiCatálogo</span>
+            <span className="text-xs text-slate-400">Justin Tomalá</span>
+          </div>
+        </div>
       </div>
 
-      <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {items.map((item) => {
-          // Resaltamos la opción activa según la ruta actual
           const esActivo =
-            item.to === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.to);
+            item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
 
           return (
             <Link
               key={item.to}
               to={item.to}
               onClick={closeMobileMenu}
-              className={`flex items-center gap-3 p-3 rounded transition ${esActivo
-                  ? "bg-indigo-600 text-white"
-                  : "hover:bg-slate-800"
-                } ${isCollapsed ? 'md:justify-center' : ''}`}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition ${
+                esActivo
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-900/40"
+                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
+              } ${isCollapsed ? "md:justify-center" : ""}`}
               title={item.title}
             >
-              <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
               </svg>
-              <span className={`whitespace-nowrap ${isCollapsed ? 'md:hidden' : ''}`}>
+              <span className={`text-sm font-medium whitespace-nowrap ${isCollapsed ? "md:hidden" : ""}`}>
                 {item.label}
               </span>
             </Link>
@@ -135,13 +139,13 @@ const Sidebar = ({ isCollapsed, isMobileOpen, closeMobileMenu }: SidebarProps) =
         })}
       </nav>
 
-      <div className="p-3 border-t border-slate-700 text-xs text-slate-300 space-y-3">
+      <div className="p-3 border-t border-slate-700/80 text-xs text-slate-400 space-y-3">
         <InstallButton collapsed={isCollapsed} className="w-full" />
         {isCollapsed ? (
-          <p className="text-center uppercase">{user?.rol}</p>
+          <p className="text-center uppercase tracking-wide">{user?.rol}</p>
         ) : (
           <p>
-            Conectado como <span className="font-semibold uppercase">{user?.rol}</span>
+            Conectado como <span className="font-semibold uppercase text-slate-200">{user?.rol}</span>
           </p>
         )}
       </div>
