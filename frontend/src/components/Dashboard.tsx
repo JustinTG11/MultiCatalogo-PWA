@@ -21,7 +21,7 @@ const dinero = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionD
 const Vacio = ({ texto }: { texto: string }) => <p className="text-sm text-slate-500 dark:text-slate-400">{texto}</p>;
 
 const Dashboard = () => {
-  const { success, error: toastError } = useToast();
+  const { error: toastError } = useToast();
 
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
