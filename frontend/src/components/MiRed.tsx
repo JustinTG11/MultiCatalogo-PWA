@@ -1,11 +1,11 @@
-// src/components/MiRed.tsx — Red con expand/collapse, búsqueda y export CSV
+// src/components/MiRed.tsx — Red con expand/collapse, búsqueda y export PDF
 import { useEffect, useMemo, useState } from "react";
 import { contarRed, sumarVentasRed, TASA_COMISION, type Referido } from "../data/red";
 import { getRedMia } from "../services/redService";
 import { getMisComisiones, type ComisionesRespuesta } from "../services/comisionesService";
 import { getMisLiquidaciones, type Liquidacion } from "../services/liquidacionesService";
 import { useToast } from "../context/ToastContext";
-import { aCSV, descargarCSV } from "../utils/csv";
+import { exportarPDF } from "../utils/pdf";
 import EstadoBadge from "./EstadoBadge";
 
 const NIVEL_ESTILO: Record<number, { badge: string; border: string; tasa: string }> = {
@@ -165,12 +165,8 @@ const MiRed = () => {
     setExpanded(new Set());
   };
 
-  const exportarComisiones = () => {
-    if (!comis || comis.comisiones.length === 0) {
-      success("No hay comisiones para exportar");
-      return;
-    }
-    const filas = comis.comisiones.map((c) => ({
+  const filasComisiones = () =>
+    (comis?.comisiones ?? []).map((c) => ({
       id: c.id,
       fecha: new Date(c.creado_en).toLocaleDateString("es"),
       pedido: `MC-${String(c.pedido_id).padStart(6, "0")}`,
@@ -179,11 +175,25 @@ const MiRed = () => {
       monto: c.monto.toFixed(2),
       estado: c.estado,
     }));
-    descargarCSV(
-      `comisiones_${new Date().toISOString().slice(0, 10)}.csv`,
-      aCSV(filas, ["id", "fecha", "pedido", "nivel", "porcentaje", "monto", "estado"])
-    );
-    success("CSV de comisiones descargado");
+
+  const exportarComisionesPdf = () => {
+    if (!comis || comis.comisiones.length === 0) {
+      success("No hay comisiones para exportar");
+      return;
+    }
+    exportarPDF({
+      titulo: "Mis comisiones",
+      subtitulo: "Red de referidos · MultiCatálogo",
+      columnas: [
+        { key: "fecha", label: "Fecha" },
+        { key: "pedido", label: "Pedido" },
+        { key: "nivel", label: "Nivel" },
+        { key: "porcentaje", label: "%" },
+        { key: "monto", label: "Monto", align: "right" },
+        { key: "estado", label: "Estado" },
+      ],
+      filas: filasComisiones().map((f) => ({ ...f, monto: "$" + f.monto })),
+    });
   };
 
   if (error) {
@@ -244,8 +254,8 @@ const MiRed = () => {
             {TASA_COMISION[3] * 100} % de nivel 3.
           </p>
         </div>
-        <button type="button" onClick={exportarComisiones} className="btn-secondary text-sm shrink-0">
-          Exportar comisiones CSV
+        <button type="button" onClick={exportarComisionesPdf} className="btn-primary text-sm shrink-0">
+          Exportar PDF
         </button>
       </div>
 
@@ -330,8 +340,8 @@ const MiRed = () => {
       <div className="card p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-slate-800 dark:text-white">Mis comisiones</h2>
-          <button type="button" onClick={exportarComisiones} className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
-            CSV
+          <button type="button" onClick={exportarComisionesPdf} className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+            PDF
           </button>
         </div>
         {comis.comisiones.length === 0 ? (

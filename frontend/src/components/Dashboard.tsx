@@ -12,7 +12,7 @@ import {
   type TopProducto,
   type TopReferido,
 } from "../services/reportesService";
-import { aCSV, descargarCSV } from "../utils/csv";
+import { exportarPDF } from "../utils/pdf";
 import { getPedidosAdmin } from "../services/pedidosService";
 import { useToast } from "../context/ToastContext";
 
@@ -78,53 +78,36 @@ const Dashboard = () => {
         <div className="flex flex-wrap gap-2 order-last md:order-none w-full md:w-auto">
           <button
             type="button"
-            className="btn-secondary !min-h-[40px] text-sm"
+            className="btn-primary !min-h-[40px] text-sm"
             onClick={async () => {
               try {
                 const r = await getPedidosAdmin("", 1, 200);
-                const filas = r.data.map((p) => ({
-                  id: p.id,
-                  numero: p.numero,
-                  fecha: new Date(p.fecha).toLocaleDateString("es"),
-                  cliente: p.cliente?.nombre ?? "",
-                  email: p.cliente?.email ?? "",
-                  total: p.total.toFixed(2),
-                  estado: p.estado,
-                }));
-                descargarCSV(
-                  `pedidos_${new Date().toISOString().slice(0, 10)}.csv`,
-                  aCSV(filas, ["id", "numero", "fecha", "cliente", "email", "total", "estado"])
-                );
-                success("CSV de pedidos descargado");
+                exportarPDF({
+                  titulo: "Reporte de pedidos",
+                  subtitulo: "Administración · MultiCatálogo",
+                  columnas: [
+                    { key: "numero", label: "Número" },
+                    { key: "fecha", label: "Fecha" },
+                    { key: "cliente", label: "Cliente" },
+                    { key: "email", label: "Email" },
+                    { key: "total", label: "Total", align: "right" },
+                    { key: "estado", label: "Estado" },
+                  ],
+                  filas: r.data.map((p) => ({
+                    numero: p.numero,
+                    fecha: new Date(p.fecha).toLocaleDateString("es"),
+                    cliente: p.cliente?.nombre ?? "",
+                    email: p.cliente?.email ?? "",
+                    total: "$" + p.total.toFixed(2),
+                    estado: p.estado,
+                  })),
+                });
               } catch (e) {
-                toastError(e instanceof Error ? e.message : "No se pudo exportar");
+                toastError(e instanceof Error ? e.message : "No se pudo exportar PDF");
               }
             }}
           >
-            Exportar pedidos CSV
-          </button>
-          <button
-            type="button"
-            className="btn-secondary !min-h-[40px] text-sm"
-            onClick={() => {
-              if (productos.length === 0) {
-                toastError("Sin datos de top productos");
-                return;
-              }
-              const filas = productos.map((p) => ({
-                id: p.id,
-                nombre: p.nombre,
-                cantidad: p.cantidad,
-                total: p.total.toFixed(2),
-              }));
-              descargarCSV(
-                `top_productos_${new Date().toISOString().slice(0, 10)}.csv`,
-                aCSV(filas, ["id", "nombre", "cantidad", "total"])
-              );
-              success("CSV de productos descargado");
-            }}
-          >
-            Exportar top productos
+            Exportar PDF
           </button>
         </div>
         <div className="flex flex-wrap gap-3 items-end">

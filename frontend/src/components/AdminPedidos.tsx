@@ -10,15 +10,13 @@ import {
   type Pedido,
 } from "../services/pedidosService";
 import EstadoBadge from "./EstadoBadge";
-import { aCSV, descargarCSV } from "../utils/csv";
-import { useToast } from "../context/ToastContext";
+import { exportarPDF } from "../utils/pdf";
 import Paginacion from "./Paginacion";
 
 const LIMIT = 10;
 const ESTADOS: EstadoPedido[] = ["pendiente", "preparando", "enviado", "entregado", "cancelado"];
 
 const AdminPedidos = () => {
-  const { success } = useToast();
   const [estado, setEstado] = useState("");
   const [page, setPage] = useState(1);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
@@ -71,9 +69,8 @@ const AdminPedidos = () => {
     </div>
   );
 
-  const exportar = () => {
-    if (pedidos.length === 0) return;
-    const filas = pedidos.map((p) => ({
+  const filasExport = () =>
+    pedidos.map((p) => ({
       id: p.id,
       numero: p.numero,
       fecha: new Date(p.fecha).toLocaleDateString("es"),
@@ -82,11 +79,21 @@ const AdminPedidos = () => {
       total: p.total.toFixed(2),
       estado: p.estado,
     }));
-    descargarCSV(
-      `pedidos_${new Date().toISOString().slice(0, 10)}.csv`,
-      aCSV(filas, ["id", "numero", "fecha", "cliente", "email", "total", "estado"])
-    );
-    success("CSV descargado");
+
+  const exportarPdf = () => {
+    if (pedidos.length === 0) return;
+    exportarPDF({
+      titulo: "Reporte de pedidos",
+      subtitulo: estado ? `Filtro: ${estado}` : "Todos los estados",
+      columnas: [
+        { key: "numero", label: "Número" },
+        { key: "fecha", label: "Fecha" },
+        { key: "cliente", label: "Cliente" },
+        { key: "total", label: "Total", align: "right" },
+        { key: "estado", label: "Estado" },
+      ],
+      filas: filasExport().map((f) => ({ ...f, total: "$" + f.total })),
+    });
   };
 
   return (
@@ -107,8 +114,8 @@ const AdminPedidos = () => {
               <option key={e} value={e}>{e}</option>
             ))}
           </select>
-          <button type="button" onClick={exportar} className="btn-secondary !min-h-[42px] text-sm">
-            Exportar CSV
+          <button type="button" onClick={exportarPdf} className="btn-primary !min-h-[42px] text-sm">
+            Exportar PDF
           </button>
         </div>
       </div>
