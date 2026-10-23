@@ -7,8 +7,36 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  /* Evita que el navegador pinte inputs con color de sistema incorrecto en dark mode */
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html:not(.dark) {
+    color-scheme: light;
+  }
+
   body {
     @apply overflow-x-hidden bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200;
+  }
+
+  /* Forzar color de texto en controles de formulario (Safari/Chrome a veces ignoran el color) */
+  input,
+  select,
+  textarea {
+    color: inherit;
+  }
+
+  html.dark input,
+  html.dark select,
+  html.dark textarea {
+    color: #f1f5f9; /* slate-100 */
+  }
+
+  html:not(.dark) input,
+  html:not(.dark) select,
+  html:not(.dark) textarea {
+    color: #1e293b; /* slate-800 */
   }
 
   @media (max-width: 767px) {
@@ -51,7 +79,7 @@
   }
 
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl border border-slate-300 bg-white
+    @apply w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-800
       dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100
       focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition
       placeholder:text-slate-400 dark:placeholder:text-slate-500;

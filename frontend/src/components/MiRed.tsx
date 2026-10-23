@@ -140,7 +140,14 @@ const MiRed = () => {
       <div className="card p-4 sm:p-6">
         <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Tu link de invitación</p>
         <div className="flex flex-col sm:flex-row gap-3">
-          <input readOnly value={link} className="input-field font-mono text-sm" />
+          <input
+            readOnly
+            value={link}
+            className="w-full px-4 py-3 rounded-xl border font-mono text-sm outline-none
+              bg-slate-50 text-slate-800 border-slate-300
+              dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600
+              selection:bg-indigo-200 dark:selection:bg-indigo-700"
+          />
           <button type="button" onClick={copiar} className="btn-primary shrink-0 sm:min-w-[110px]">
             {copiado ? "¡Copiado!" : "Copiar"}
           </button>
