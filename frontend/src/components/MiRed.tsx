@@ -37,7 +37,7 @@ function todosIds(nodo: Referido, acc: number[] = []): number[] {
 function coincideBusqueda(nodo: Referido, q: string): boolean {
   if (!q) return true;
   const t = q.toLowerCase();
-  if (nodo.nombre.toLowerCase().includes(t)) return true;
+  if ((nodo.nombre ?? "").toLowerCase().includes(t)) return true;
   return (nodo.hijos ?? []).some((h) => coincideBusqueda(h, q));
 }
 
@@ -54,7 +54,7 @@ const NodoReferido = ({ nodo, expanded, toggle, busqueda }: NodoProps) => {
   const abierto = expanded.has(nodo.id);
   const q = busqueda.trim();
   const hijosVisibles = (nodo.hijos ?? []).filter((h) => coincideBusqueda(h, q));
-  const matchDirecto = !q || nodo.nombre.toLowerCase().includes(q.toLowerCase());
+  const matchDirecto = !q || (nodo.nombre ?? "").toLowerCase().includes(q.toLowerCase());
 
   if (q && !coincideBusqueda(nodo, q)) return null;
 
@@ -196,6 +196,12 @@ const MiRed = () => {
     });
   };
 
+  // Hooks siempre antes de cualquier return (reglas de React)
+  const hijosFiltrados = useMemo(
+    () => (red?.hijos ?? []).filter((h) => coincideBusqueda(h, busqueda.trim())),
+    [red, busqueda]
+  );
+
   if (error) {
     return (
       <div className="bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-300 p-4 rounded-xl border border-red-200 dark:border-red-900">
@@ -238,11 +244,6 @@ const MiRed = () => {
       color: "text-emerald-600 dark:text-emerald-400",
     },
   ];
-
-  const hijosFiltrados = useMemo(
-    () => (red.hijos ?? []).filter((h) => coincideBusqueda(h, busqueda.trim())),
-    [red, busqueda]
-  );
 
   return (
     <div className="space-y-6 sm:space-y-8 max-w-5xl mx-auto">
