@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -93,7 +94,7 @@ func main() {
 	app.Use(controllers.ExponerDetalles(appEnv == "dev"))
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:5173, http://127.0.0.1:5173, http://192.168.110.84:5173",
+		AllowOrigins: allowedOrigins(),
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 	}))
 
@@ -114,4 +115,17 @@ func main() {
 	_ = app.Shutdown()
 	// Antes de cerrar la BD, se espera a que terminen las comisiones de compras ya confirmadas.
 	checkoutService.Esperar(15 * time.Second)
+}
+
+// allowedOrigins devuelve los orígenes que pueden llamar a la API (CORS).
+// Siempre incluye los de desarrollo; en despliegue se suman los de CORS_ORIGINS (separados por coma),
+// por ejemplo: CORS_ORIGINS=https://multicatalogo-pwa.onrender.com
+func allowedOrigins() string {
+	origins := []string{"http://localhost:5173", "http://127.0.0.1:5173", "http://192.168.110.84:5173"}
+	for _, o := range strings.Split(config.Getenv("CORS_ORIGINS", ""), ",") {
+		if o = strings.TrimRight(strings.TrimSpace(o), "/"); o != "" {
+			origins = append(origins, o)
+		}
+	}
+	return strings.Join(origins, ", ")
 }
