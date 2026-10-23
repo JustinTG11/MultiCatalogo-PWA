@@ -1,10 +1,11 @@
-// src/components/MiRed.tsx — Red multinivel con soporte dark mode
-import { useEffect, useState } from "react";
+// src/components/MiRed.tsx — Red con expand/collapse, búsqueda y export CSV
+import { useEffect, useMemo, useState } from "react";
 import { contarRed, sumarVentasRed, TASA_COMISION, type Referido } from "../data/red";
 import { getRedMia } from "../services/redService";
 import { getMisComisiones, type ComisionesRespuesta } from "../services/comisionesService";
 import { getMisLiquidaciones, type Liquidacion } from "../services/liquidacionesService";
 import { useToast } from "../context/ToastContext";
+import { aCSV, descargarCSV } from "../utils/csv";
 import EstadoBadge from "./EstadoBadge";
 
 const NIVEL_ESTILO: Record<number, { badge: string; border: string; tasa: string }> = {
@@ -25,34 +26,91 @@ const NIVEL_ESTILO: Record<number, { badge: string; border: string; tasa: string
   },
 };
 
-const NodoReferido = ({ nodo }: { nodo: Referido }) => {
+/** Recolecta todos los ids del árbol (excepto la raíz opcional). */
+function todosIds(nodo: Referido, acc: number[] = []): number[] {
+  acc.push(nodo.id);
+  (nodo.hijos ?? []).forEach((h) => todosIds(h, acc));
+  return acc;
+}
+
+/** ¿El nodo o algún descendiente coincide con la búsqueda? */
+function coincideBusqueda(nodo: Referido, q: string): boolean {
+  if (!q) return true;
+  const t = q.toLowerCase();
+  if (nodo.nombre.toLowerCase().includes(t)) return true;
+  return (nodo.hijos ?? []).some((h) => coincideBusqueda(h, q));
+}
+
+interface NodoProps {
+  nodo: Referido;
+  expanded: Set<number>;
+  toggle: (id: number) => void;
+  busqueda: string;
+}
+
+const NodoReferido = ({ nodo, expanded, toggle, busqueda }: NodoProps) => {
   const estilo = NIVEL_ESTILO[nodo.nivel] ?? NIVEL_ESTILO[1];
+  const tieneHijos = (nodo.hijos?.length ?? 0) > 0;
+  const abierto = expanded.has(nodo.id);
+  const q = busqueda.trim();
+  const hijosVisibles = (nodo.hijos ?? []).filter((h) => coincideBusqueda(h, q));
+  const matchDirecto = !q || nodo.nombre.toLowerCase().includes(q.toLowerCase());
+
+  if (q && !coincideBusqueda(nodo, q)) return null;
+
   return (
     <li>
       <div
-        className={`card p-4 flex flex-wrap items-center justify-between gap-3 border ${estilo.border}`}
+        className={`card p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 border ${estilo.border} ${
+          matchDirecto && q ? "ring-2 ring-indigo-400/50" : ""
+        }`}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-600 dark:text-slate-200">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {tieneHijos ? (
+            <button
+              type="button"
+              onClick={() => toggle(nodo.id)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition"
+              aria-label={abierto ? "Colapsar" : "Expandir"}
+            >
+              <svg
+                className={`w-4 h-4 transition-transform ${abierto ? "rotate-90" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ) : (
+            <span className="w-8 h-8 shrink-0" />
+          )}
+          <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-600 dark:text-slate-200 shrink-0">
             {nodo.nombre.charAt(0)}
           </div>
-          <div>
-            <p className="font-semibold text-slate-800 dark:text-white">{nodo.nombre}</p>
+          <div className="min-w-0">
+            <p className="font-semibold text-slate-800 dark:text-white truncate">{nodo.nombre}</p>
             <span className={`inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded-full ${estilo.badge}`}>
               Nivel {nodo.nivel} · {estilo.tasa} comisión
             </span>
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-right pl-10 sm:pl-0">
           <p className="text-sm text-slate-500 dark:text-slate-400">Ventas</p>
           <p className="font-bold text-slate-800 dark:text-white">${nodo.ventas.toLocaleString()}</p>
         </div>
       </div>
 
-      {nodo.hijos && nodo.hijos.length > 0 && (
+      {tieneHijos && (abierto || !!q) && hijosVisibles.length > 0 && (
         <ul className="mt-3 ml-4 sm:ml-6 space-y-3 border-l-2 border-slate-200 dark:border-slate-700 pl-3 sm:pl-4">
-          {nodo.hijos.map((hijo) => (
-            <NodoReferido key={hijo.id} nodo={hijo} />
+          {hijosVisibles.map((hijo) => (
+            <NodoReferido
+              key={hijo.id}
+              nodo={hijo}
+              expanded={expanded}
+              toggle={toggle}
+              busqueda={busqueda}
+            />
           ))}
         </ul>
       )}
@@ -67,6 +125,8 @@ const MiRed = () => {
   const [cobros, setCobros] = useState<Liquidacion[]>([]);
   const [error, setError] = useState("");
   const [copiado, setCopiado] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     let activo = true;
@@ -76,12 +136,55 @@ const MiRed = () => {
         setRed(r);
         setComis(c);
         setCobros(l);
+        // Expandir primer nivel por defecto
+        const ids = new Set<number>();
+        (r.hijos ?? []).forEach((h) => ids.add(h.id));
+        setExpanded(ids);
       })
       .catch((e: unknown) => activo && setError(e instanceof Error ? e.message : "No se pudo cargar la red"));
     return () => {
       activo = false;
     };
   }, []);
+
+  const toggle = (id: number) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const expandirTodo = () => {
+    if (!red) return;
+    setExpanded(new Set(todosIds(red)));
+  };
+
+  const colapsarTodo = () => {
+    setExpanded(new Set());
+  };
+
+  const exportarComisiones = () => {
+    if (!comis || comis.comisiones.length === 0) {
+      success("No hay comisiones para exportar");
+      return;
+    }
+    const filas = comis.comisiones.map((c) => ({
+      id: c.id,
+      fecha: new Date(c.creado_en).toLocaleDateString("es"),
+      pedido: `MC-${String(c.pedido_id).padStart(6, "0")}`,
+      nivel: c.nivel,
+      porcentaje: c.porcentaje,
+      monto: c.monto.toFixed(2),
+      estado: c.estado,
+    }));
+    descargarCSV(
+      `comisiones_${new Date().toISOString().slice(0, 10)}.csv`,
+      aCSV(filas, ["id", "fecha", "pedido", "nivel", "porcentaje", "monto", "estado"])
+    );
+    success("CSV de comisiones descargado");
+  };
 
   if (error) {
     return (
@@ -126,35 +229,40 @@ const MiRed = () => {
     },
   ];
 
+  const hijosFiltrados = useMemo(
+    () => (red.hijos ?? []).filter((h) => coincideBusqueda(h, busqueda.trim())),
+    [red, busqueda]
+  );
+
   return (
     <div className="space-y-6 sm:space-y-8 max-w-5xl mx-auto">
-      <div>
-        <h1 className="page-title">Mi Red de Referidos</h1>
-        <p className="page-subtitle mt-1">
-          Gana el {TASA_COMISION[1] * 100} % de nivel 1, {TASA_COMISION[2] * 100} % de nivel 2 y{" "}
-          {TASA_COMISION[3] * 100} % de nivel 3.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+          <h1 className="page-title">Mi Red de Referidos</h1>
+          <p className="page-subtitle mt-1">
+            Gana el {TASA_COMISION[1] * 100} % de nivel 1, {TASA_COMISION[2] * 100} % de nivel 2 y{" "}
+            {TASA_COMISION[3] * 100} % de nivel 3.
+          </p>
+        </div>
+        <button type="button" onClick={exportarComisiones} className="btn-secondary text-sm shrink-0">
+          Exportar comisiones CSV
+        </button>
       </div>
 
-      {/* Link de invitación */}
       <div className="card p-4 sm:p-6">
         <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Tu link de invitación</p>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <input
-            readOnly
-            value={link}
-            className="w-full px-4 py-3 rounded-xl border font-mono text-sm outline-none
-              bg-slate-50 text-slate-800 border-slate-300
-              dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600
-              selection:bg-indigo-200 dark:selection:bg-indigo-700"
-          />
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+          <div className="flex-1 min-w-0 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-4 py-3 overflow-x-auto">
+            <code className="text-sm font-mono text-slate-900 dark:text-slate-100 break-all select-all">
+              {link}
+            </code>
+          </div>
           <button type="button" onClick={copiar} className="btn-primary shrink-0 sm:min-w-[110px]">
             {copiado ? "¡Copiado!" : "Copiar"}
           </button>
         </div>
       </div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {resumen.map((item) => (
           <div key={item.etiqueta} className="card p-4 sm:p-5">
@@ -168,9 +276,26 @@ const MiRed = () => {
 
       {/* Jerarquía */}
       <div className="card p-4 sm:p-6">
-        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Jerarquía de tu Red</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white flex-1">Jerarquía de tu Red</h2>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={expandirTodo} className="btn-secondary !min-h-[36px] !px-3 text-xs">
+              Expandir todo
+            </button>
+            <button type="button" onClick={colapsarTodo} className="btn-secondary !min-h-[36px] !px-3 text-xs">
+              Colapsar
+            </button>
+          </div>
+        </div>
 
-        {/* Nodo raíz (tú) */}
+        <input
+          type="search"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar referido por nombre..."
+          className="input-field mb-4"
+        />
+
         <div className="mb-4 rounded-xl bg-slate-900 dark:bg-indigo-950 border border-slate-700 dark:border-indigo-800 px-4 py-3 flex items-center gap-3 text-white">
           <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-bold shrink-0">
             {red.nombre.charAt(0).toUpperCase()}
@@ -181,20 +306,34 @@ const MiRed = () => {
           </div>
         </div>
 
-        {red.hijos && red.hijos.length > 0 ? (
+        {hijosFiltrados.length > 0 ? (
           <ul className="space-y-3">
-            {red.hijos.map((hijo) => (
-              <NodoReferido key={hijo.id} nodo={hijo} />
+            {hijosFiltrados.map((hijo) => (
+              <NodoReferido
+                key={hijo.id}
+                nodo={hijo}
+                expanded={expanded}
+                toggle={toggle}
+                busqueda={busqueda}
+              />
             ))}
           </ul>
         ) : (
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Aún no tienes referidos. ¡Comparte tu link!</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">
+            {busqueda.trim()
+              ? "Ningún referido coincide con la búsqueda."
+              : "Aún no tienes referidos. ¡Comparte tu link!"}
+          </p>
         )}
       </div>
 
-      {/* Ledger */}
       <div className="card p-4 sm:p-6">
-        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Mis comisiones</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white">Mis comisiones</h2>
+          <button type="button" onClick={exportarComisiones} className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+            CSV
+          </button>
+        </div>
         {comis.comisiones.length === 0 ? (
           <p className="text-slate-500 dark:text-slate-400 text-sm">Todavía no has generado comisiones.</p>
         ) : (
@@ -229,7 +368,6 @@ const MiRed = () => {
         )}
       </div>
 
-      {/* Cobros recibidos */}
       <div className="card p-4 sm:p-6">
         <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Mis cobros</h2>
         {cobros.length === 0 ? (

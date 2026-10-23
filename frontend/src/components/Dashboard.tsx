@@ -12,12 +12,17 @@ import {
   type TopProducto,
   type TopReferido,
 } from "../services/reportesService";
+import { aCSV, descargarCSV } from "../utils/csv";
+import { getPedidosAdmin } from "../services/pedidosService";
+import { useToast } from "../context/ToastContext";
 
 const dinero = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const Vacio = ({ texto }: { texto: string }) => <p className="text-sm text-slate-500 dark:text-slate-400">{texto}</p>;
 
 const Dashboard = () => {
+  const { success, error: toastError } = useToast();
+
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
   const [resumen, setResumen] = useState<Resumen | null>(null);
@@ -70,6 +75,58 @@ const Dashboard = () => {
     <div>
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Resumen General</h1>
+        <div className="flex flex-wrap gap-2 order-last md:order-none w-full md:w-auto">
+          <button
+            type="button"
+            className="btn-secondary !min-h-[40px] text-sm"
+            onClick={async () => {
+              try {
+                const r = await getPedidosAdmin("", 1, 200);
+                const filas = r.data.map((p) => ({
+                  id: p.id,
+                  numero: p.numero,
+                  fecha: new Date(p.fecha).toLocaleDateString("es"),
+                  cliente: p.cliente?.nombre ?? "",
+                  email: p.cliente?.email ?? "",
+                  total: p.total.toFixed(2),
+                  estado: p.estado,
+                }));
+                descargarCSV(
+                  `pedidos_${new Date().toISOString().slice(0, 10)}.csv`,
+                  aCSV(filas, ["id", "numero", "fecha", "cliente", "email", "total", "estado"])
+                );
+                success("CSV de pedidos descargado");
+              } catch (e) {
+                toastError(e instanceof Error ? e.message : "No se pudo exportar");
+              }
+            }}
+          >
+            Exportar pedidos CSV
+          </button>
+          <button
+            type="button"
+            className="btn-secondary !min-h-[40px] text-sm"
+            onClick={() => {
+              if (productos.length === 0) {
+                toastError("Sin datos de top productos");
+                return;
+              }
+              const filas = productos.map((p) => ({
+                id: p.id,
+                nombre: p.nombre,
+                cantidad: p.cantidad,
+                total: p.total.toFixed(2),
+              }));
+              descargarCSV(
+                `top_productos_${new Date().toISOString().slice(0, 10)}.csv`,
+                aCSV(filas, ["id", "nombre", "cantidad", "total"])
+              );
+              success("CSV de productos descargado");
+            }}
+          >
+            Exportar top productos
+          </button>
+        </div>
         <div className="flex flex-wrap gap-3 items-end">
           <label className="text-sm text-slate-600 dark:text-slate-300">
             Desde

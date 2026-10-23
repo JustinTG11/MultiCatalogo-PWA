@@ -3,6 +3,7 @@ import { type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
+import ClienteHome from './components/ClienteHome';
 import Catalogo from './components/Catalogo';
 import Storefront from './components/Storefront';
 import DetalleProducto from './components/DetalleProducto';
@@ -25,30 +26,27 @@ import { useAuth } from './context/auth';
 
 const ProtectedRoute = () => {
   const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <Outlet />;
 };
 
 const AdminRoute = () => {
   const { isAuthenticated, user } = useAuth();
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  if (user?.rol !== 'admin') {
-    return <Navigate to="/tienda" replace />;
-  }
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user?.rol !== 'admin') return <Navigate to="/" replace />;
   return <Outlet />;
+};
+
+/** / → Dashboard admin o Inicio del cliente según rol */
+const HomeSwitch = () => {
+  const { user } = useAuth();
+  if (user?.rol === 'admin') return <Dashboard />;
+  return <ClienteHome />;
 };
 
 const CartBoundary = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  return (
-    <CartProvider key={user?.email ?? "anonimo"}>
-      {children}
-    </CartProvider>
-  );
+  return <CartProvider key={user?.email ?? "anonimo"}>{children}</CartProvider>;
 };
 
 function App() {
@@ -64,8 +62,9 @@ function App() {
 
                 <Route element={<ProtectedRoute />}>
                   <Route path="/" element={<Layout />}>
+                    <Route index element={<HomeSwitch />} />
+
                     <Route element={<AdminRoute />}>
-                      <Route index element={<Dashboard />} />
                       <Route path="admin/pedidos" element={<AdminPedidos />} />
                       <Route path="admin/liquidaciones" element={<AdminLiquidaciones />} />
                       <Route path="admin/productos" element={<AdminProductos />} />

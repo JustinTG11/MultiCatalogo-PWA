@@ -10,12 +10,15 @@ import {
   type Pedido,
 } from "../services/pedidosService";
 import EstadoBadge from "./EstadoBadge";
+import { aCSV, descargarCSV } from "../utils/csv";
+import { useToast } from "../context/ToastContext";
 import Paginacion from "./Paginacion";
 
 const LIMIT = 10;
 const ESTADOS: EstadoPedido[] = ["pendiente", "preparando", "enviado", "entregado", "cancelado"];
 
 const AdminPedidos = () => {
+  const { success } = useToast();
   const [estado, setEstado] = useState("");
   const [page, setPage] = useState(1);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
@@ -68,23 +71,46 @@ const AdminPedidos = () => {
     </div>
   );
 
+  const exportar = () => {
+    if (pedidos.length === 0) return;
+    const filas = pedidos.map((p) => ({
+      id: p.id,
+      numero: p.numero,
+      fecha: new Date(p.fecha).toLocaleDateString("es"),
+      cliente: p.cliente?.nombre ?? "",
+      email: p.cliente?.email ?? "",
+      total: p.total.toFixed(2),
+      estado: p.estado,
+    }));
+    descargarCSV(
+      `pedidos_${new Date().toISOString().slice(0, 10)}.csv`,
+      aCSV(filas, ["id", "numero", "fecha", "cliente", "email", "total", "estado"])
+    );
+    success("CSV descargado");
+  };
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Pedidos</h1>
-        <select
-          value={estado}
-          onChange={(e) => {
-            setEstado(e.target.value);
-            setPage(1);
-          }}
-          className="px-3 py-2.5 rounded-lg border border-slate-300 bg-white dark:bg-slate-900 capitalize"
-        >
-          <option value="">Todos los estados</option>
-          {ESTADOS.map((e) => (
-            <option key={e} value={e}>{e}</option>
-          ))}
-        </select>
+        <div className="flex flex-wrap gap-2">
+          <select
+            value={estado}
+            onChange={(e) => {
+              setEstado(e.target.value);
+              setPage(1);
+            }}
+            className="px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 capitalize"
+          >
+            <option value="">Todos los estados</option>
+            {ESTADOS.map((e) => (
+              <option key={e} value={e}>{e}</option>
+            ))}
+          </select>
+          <button type="button" onClick={exportar} className="btn-secondary !min-h-[42px] text-sm">
+            Exportar CSV
+          </button>
+        </div>
       </div>
 
       {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-200">{error}</div>}

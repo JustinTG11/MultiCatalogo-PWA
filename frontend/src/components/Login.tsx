@@ -38,7 +38,7 @@ const Login = () => {
       .then((data) => {
         const rol: Rol = data.rol === "admin" ? "admin" : "cliente";
         login({ email: data.email, rol, token: data.token });
-        navigate(rol === "admin" ? "/" : "/tienda");
+        navigate("/");
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "Error inesperado");
