@@ -1415,27 +1415,39 @@ func (r *PostgresRepository) GetComisionesMias(referidoID int) ([]models.Comisio
 	return comisiones, resumen, nil
 }
 
-// GetUsuarios lista usuarios (admin), paginado y con búsqueda opcional por email o nombre (ILIKE).
+// GetUsuarios lista usuarios (admin), paginado y con búsqueda opcional por email, nombre o código de referido (ILIKE).
+// Une con referidos para traer el código propio y quién invitó a cada usuario. Nunca devuelve password ni token.
 func (r *PostgresRepository) GetUsuarios(q string, page, limit int) ([]models.UsuarioResumen, int, error) {
 	ctx, cancel := contexto()
 	defer cancel()
 
+	const desde = `
+		FROM usuarios u
+		LEFT JOIN referidos r  ON r.id  = u.referido_id
+		LEFT JOIN referidos p  ON p.id  = r.parent_id`
+
 	filtro := ""
 	args := []interface{}{}
 	if q != "" {
-		filtro = ` WHERE email ILIKE $1 OR COALESCE(nombre, '') ILIKE $1`
+		filtro = ` WHERE u.email ILIKE $1 OR COALESCE(u.nombre, '') ILIKE $1 OR COALESCE(r.codigo, '') ILIKE $1`
 		args = append(args, "%"+q+"%")
 	}
 
 	var total int
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM usuarios`+filtro, args...).Scan(&total); err != nil {
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*)`+desde+filtro, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
 	args = append(args, limit, (page-1)*limit)
 	rows, err := r.db.Query(ctx,
-		`SELECT id, email, COALESCE(nombre, ''), rol, COALESCE(activo, true), referido_id, COALESCE(creado_en, NOW())
-		   FROM usuarios`+filtro+fmt.Sprintf(` ORDER BY id LIMIT $%d OFFSET $%d`, len(args)-1, len(args)), args...)
+		`SELECT u.id, u.email, COALESCE(u.nombre, ''), u.rol, COALESCE(u.activo, true), u.referido_id,
+		        COALESCE(u.creado_en, NOW()),
+		        (COALESCE(u.password, '') <> ''),
+		        COALESCE(r.codigo, ''),
+		        COALESCE(p.nombre, ''),
+		        COALESCE((SELECT pu.email FROM usuarios pu WHERE pu.referido_id = p.id ORDER BY pu.id LIMIT 1), ''),
+		        COALESCE(p.codigo, '')`+
+			desde+filtro+fmt.Sprintf(` ORDER BY u.id LIMIT $%d OFFSET $%d`, len(args)-1, len(args)), args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1444,7 +1456,8 @@ func (r *PostgresRepository) GetUsuarios(q string, page, limit int) ([]models.Us
 	usuarios := make([]models.UsuarioResumen, 0)
 	for rows.Next() {
 		var u models.UsuarioResumen
-		if err := rows.Scan(&u.ID, &u.Email, &u.Nombre, &u.Rol, &u.Activo, &u.ReferidoID, &u.CreadoEn); err != nil {
+		if err := rows.Scan(&u.ID, &u.Email, &u.Nombre, &u.Rol, &u.Activo, &u.ReferidoID, &u.CreadoEn,
+			&u.TienePassword, &u.CodigoReferido, &u.ReferidoPorNombre, &u.ReferidoPorEmail, &u.ReferidoPorCodigo); err != nil {
 			return nil, 0, err
 		}
 		usuarios = append(usuarios, u)

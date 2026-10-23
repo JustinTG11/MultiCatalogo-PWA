@@ -240,4 +240,12 @@ type UsuarioResumen struct {
 	Activo     bool      `json:"activo"`
 	ReferidoID *int      `json:"referido_id"`
 	CreadoEn   time.Time `json:"creado_en"`
+	// TienePassword indica si la cuenta ya tiene una contraseña creada. Nunca se expone la contraseña ni su hash.
+	TienePassword bool `json:"tiene_password"`
+	// CodigoReferido es el código propio del usuario para invitar a otros (referidos.codigo).
+	CodigoReferido string `json:"codigo_referido"`
+	// ReferidoPorNombre/Email/Codigo: quién lo invitó (vacío si se registró sin código o es la raíz).
+	ReferidoPorNombre string `json:"referido_por_nombre"`
+	ReferidoPorEmail  string `json:"referido_por_email"`
+	ReferidoPorCodigo string `json:"referido_por_codigo"`
 }
