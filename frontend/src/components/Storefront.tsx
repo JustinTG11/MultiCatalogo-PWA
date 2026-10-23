@@ -51,7 +51,7 @@ const Storefront = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/catalogo"
-              className="bg-white text-indigo-700 font-bold px-8 py-4 rounded-lg hover:bg-indigo-50 transition shadow-lg"
+              className="bg-white dark:bg-slate-900 text-indigo-700 font-bold px-8 py-4 rounded-lg hover:bg-indigo-50 transition shadow-lg"
             >
               Ver Catálogo Completo
             </Link>
@@ -60,7 +60,7 @@ const Storefront = () => {
             {user?.rol === "admin" && (
               <Link
                 to="/mi-red"
-                className="border-2 border-white/60 text-white font-bold px-8 py-4 rounded-lg hover:bg-white/10 transition"
+                className="border-2 border-white/60 text-white font-bold px-8 py-4 rounded-lg hover:bg-white dark:bg-slate-900/10 transition"
               >
                 Conocer el Plan Multinivel
               </Link>
@@ -78,7 +78,7 @@ const Storefront = () => {
 
       {/* ===== SECCIÓN DE CATEGORÍAS ===== */}
       <section className="py-16 px-6 max-w-6xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-slate-800 text-center mb-10">
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white text-center mb-10">
           Explora por Categoría
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -86,30 +86,30 @@ const Storefront = () => {
             <Link
               key={cat}
               to={`/catalogo?categoria=${encodeURIComponent(cat)}`}
-              className="bg-white border border-slate-200 rounded-xl p-6 text-center shadow-sm hover:shadow-md hover:border-indigo-300 hover:-translate-y-1 transition-all"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 text-center shadow-sm hover:shadow-md hover:border-indigo-300 hover:-translate-y-1 transition-all"
             >
-              <p className="font-semibold text-slate-700">{cat}</p>
+              <p className="font-semibold text-slate-700 dark:text-slate-200">{cat}</p>
             </Link>
           ))}
         </div>
       </section>
 
       {/* ===== PRODUCTOS DESTACADOS ===== */}
-      <section className="py-16 px-6 bg-slate-100">
+      <section className="py-16 px-6 bg-slate-100 dark:bg-slate-800">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-800 text-center mb-10">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white text-center mb-10">
             Productos Destacados
           </h2>
 
           {loading ? (
-            <p className="text-center text-slate-500">Cargando destacados...</p>
+            <p className="text-center text-slate-500 dark:text-slate-400">Cargando destacados...</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {destacados.map((prod) => (
                 <Link
                   key={prod.id}
                   to={`/producto/${prod.id}`}
-                  className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group"
+                  className="bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group"
                 >
                   <img
                     src={prod.img}
@@ -120,7 +120,7 @@ const Storefront = () => {
                     <p className="text-xs uppercase tracking-wide text-indigo-500 font-semibold">
                       {prod.categoria}
                     </p>
-                    <h3 className="font-semibold text-slate-800 mt-1">{prod.nombre}</h3>
+                    <h3 className="font-semibold text-slate-800 dark:text-white mt-1">{prod.nombre}</h3>
                     <p className="text-indigo-600 font-bold mt-2">${prod.precio.toFixed(2)}</p>
                   </div>
                 </Link>
@@ -132,7 +132,7 @@ const Storefront = () => {
 
       {/* ===== CÓMO FUNCIONA (PLAN MULTINIVEL) ===== */}
       <section className="py-16 px-6 max-w-6xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-slate-800 text-center mb-12">
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white text-center mb-12">
           ¿Cómo funciona el plan multinivel?
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -155,13 +155,13 @@ const Storefront = () => {
           ].map((item) => (
             <div
               key={item.paso}
-              className="bg-white border border-slate-200 rounded-xl p-8 text-center shadow-sm"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center shadow-sm"
             >
               <div className="w-12 h-12 mx-auto rounded-full bg-indigo-600 text-white font-bold text-xl flex items-center justify-center mb-4">
                 {item.paso}
               </div>
-              <h3 className="font-bold text-slate-800 mb-2">{item.titulo}</h3>
-              <p className="text-slate-500 text-sm">{item.texto}</p>
+              <h3 className="font-bold text-slate-800 dark:text-white mb-2">{item.titulo}</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">{item.texto}</p>
             </div>
           ))}
         </div>

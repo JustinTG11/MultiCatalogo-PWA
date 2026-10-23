@@ -46,30 +46,30 @@ const AdminLiquidaciones = () => {
     }
   };
 
-  if (loading) return <p className="text-slate-500">Cargando liquidaciones...</p>;
+  if (loading) return <p className="text-slate-500 dark:text-slate-400">Cargando liquidaciones...</p>;
 
   const totalDeuda = deudas.reduce((s, d) => s + d.ventas, 0);
   const pagina = historial.slice((page - 1) * LIMIT, page * LIMIT);
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-slate-800">Liquidaciones</h1>
+      <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Liquidaciones</h1>
 
       {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-200">{error}</div>}
 
-      <section className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
+      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-800">Deuda por distribuidor</h2>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white">Deuda por distribuidor</h2>
           <span className="text-sm font-semibold text-amber-600">Total: ${totalDeuda.toFixed(2)}</span>
         </div>
         {deudas.length === 0 ? (
-          <p className="text-sm text-slate-500">No hay comisiones pendientes. 🎉</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">No hay comisiones pendientes. 🎉</p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {deudas.map((d) => (
               <li key={d.id} className="py-3 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-semibold text-slate-800">{d.nombre}</p>
+                  <p className="font-semibold text-slate-800 dark:text-white">{d.nombre}</p>
                   <p className="text-sm text-amber-600 font-semibold">${d.ventas.toFixed(2)} pendientes</p>
                 </div>
                 <button
@@ -85,15 +85,15 @@ const AdminLiquidaciones = () => {
         )}
       </section>
 
-      <section className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
-        <h2 className="text-lg font-bold text-slate-800 mb-4">Historial de pagos</h2>
+      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6">
+        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Historial de pagos</h2>
         {historial.length === 0 ? (
-          <p className="text-sm text-slate-500">Aún no se ha liquidado nada.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Aún no se ha liquidado nada.</p>
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-left text-slate-600">
+                <thead className="bg-slate-50 text-left text-slate-600 dark:text-slate-300">
                   <tr>
                     <th className="p-2">#</th>
                     <th className="p-2">Distribuidor</th>

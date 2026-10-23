@@ -54,14 +54,14 @@ const MisPedidos = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Mis pedidos</h1>
+      <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-6">Mis pedidos</h1>
 
       {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-200">{error}</div>}
 
       {loading ? (
-        <div className="text-center p-8 text-slate-500">Cargando pedidos...</div>
+        <div className="text-center p-8 text-slate-500 dark:text-slate-400">Cargando pedidos...</div>
       ) : pedidos.length === 0 ? (
-        <div className="text-center p-8 bg-white rounded-xl border border-slate-200 text-slate-500">
+        <div className="text-center p-8 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 text-slate-500 dark:text-slate-400">
           Aún no tienes pedidos.{" "}
           <Link to="/tienda" className="text-indigo-600 font-semibold hover:underline">Ir a la tienda</Link>
         </div>
@@ -69,22 +69,22 @@ const MisPedidos = () => {
         <>
           <ul className="space-y-3">
             {pedidos.map((p) => (
-              <li key={p.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <button onClick={() => alternar(p.id)} className="w-full min-h-[44px] p-4 flex flex-wrap items-center justify-between gap-2 text-left hover:bg-slate-50">
+              <li key={p.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                <button onClick={() => alternar(p.id)} className="w-full min-h-[44px] p-4 flex flex-wrap items-center justify-between gap-2 text-left hover:bg-slate-50 dark:bg-slate-800/50">
                   <div>
-                    <p className="font-semibold text-slate-800">{p.numero}</p>
-                    <p className="text-sm text-slate-500">{new Date(p.fecha).toLocaleDateString()}</p>
+                    <p className="font-semibold text-slate-800 dark:text-white">{p.numero}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{new Date(p.fecha).toLocaleDateString()}</p>
                   </div>
                   <div className="flex items-center gap-4">
                     <EstadoBadge estado={p.estado} />
-                    <span className="font-bold text-slate-800">${p.total.toFixed(2)}</span>
+                    <span className="font-bold text-slate-800 dark:text-white">${p.total.toFixed(2)}</span>
                   </div>
                 </button>
 
                 {abierto === p.id && (
-                  <div className="border-t border-slate-100 p-4 bg-slate-50 text-sm">
+                  <div className="border-t border-slate-100 p-4 bg-slate-50 dark:bg-slate-800/50 text-sm">
                     {!detalle[p.id] ? (
-                      <p className="text-slate-500">Cargando detalle...</p>
+                      <p className="text-slate-500 dark:text-slate-400">Cargando detalle...</p>
                     ) : (
                       <ul className="space-y-1">
                         {detalle[p.id].items?.map((it, i) => (

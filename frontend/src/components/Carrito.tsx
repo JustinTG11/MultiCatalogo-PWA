@@ -16,11 +16,11 @@ const Carrito = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Tu Carrito de Compras</h1>
+      <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-6">Tu Carrito de Compras</h1>
 
       {cart.length === 0 ? (
-        <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm text-center">
-          <p className="text-slate-500">Tu carrito está vacío actualmente.</p>
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+          <p className="text-slate-500 dark:text-slate-400">Tu carrito está vacío actualmente.</p>
           <Link
             to="/catalogo"
             className="inline-block mt-4 bg-indigo-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-indigo-700 transition"
@@ -35,7 +35,7 @@ const Carrito = () => {
             {cart.map((item) => (
               <div
                 key={item.id}
-                className="flex flex-wrap items-center justify-between bg-white p-4 rounded-lg border border-slate-200 shadow-sm gap-4"
+                className="flex flex-wrap items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm gap-4"
               >
                 <div className="flex items-center gap-4">
                   <img
@@ -45,30 +45,30 @@ const Carrito = () => {
                   />
                   <div>
                     <Link to={`/producto/${item.id}`}>
-                      <h3 className="font-semibold text-slate-800 hover:text-indigo-600 transition">
+                      <h3 className="font-semibold text-slate-800 dark:text-white hover:text-indigo-600 transition">
                         {item.nombre}
                       </h3>
                     </Link>
-                    <p className="text-sm text-slate-500">${item.precio.toFixed(2)} c/u</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">${item.precio.toFixed(2)} c/u</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
                   {/* Control de cantidad */}
-                  <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
                     <button
                       onClick={() => decrementQuantity(item.id)}
-                      className="min-w-[44px] min-h-[44px] px-3 py-2 text-slate-600 hover:bg-slate-100 transition"
+                      className="min-w-[44px] min-h-[44px] px-3 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800 transition"
                       aria-label="Disminuir cantidad"
                     >
                       −
                     </button>
-                    <span className="min-w-[44px] min-h-[44px] flex items-center justify-center px-3 py-2 text-sm font-semibold text-slate-800 border-x border-slate-200">
+                    <span className="min-w-[44px] min-h-[44px] flex items-center justify-center px-3 py-2 text-sm font-semibold text-slate-800 dark:text-white border-x border-slate-200 dark:border-slate-800">
                       {item.cantidad}
                     </span>
                     <button
                       onClick={() => incrementQuantity(item.id)}
-                      className="min-w-[44px] min-h-[44px] px-3 py-2 text-slate-600 hover:bg-slate-100 transition"
+                      className="min-w-[44px] min-h-[44px] px-3 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800 transition"
                       aria-label="Aumentar cantidad"
                     >
                       +
@@ -92,14 +92,14 @@ const Carrito = () => {
           </div>
 
           {/* Resumen de pago */}
-          <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm h-fit">
-            <h2 className="text-lg font-bold text-slate-800 mb-4">Resumen del Pedido</h2>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm h-fit">
+            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Resumen del Pedido</h2>
             <div className="flex justify-between border-b border-slate-100 pb-4 mb-4">
-              <span className="text-slate-600">Subtotal</span>
+              <span className="text-slate-600 dark:text-slate-300">Subtotal</span>
               <span className="font-semibold">${totalPrice.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center mb-6">
-              <span className="text-slate-800 font-bold">Total a Pagar</span>
+              <span className="text-slate-800 dark:text-white font-bold">Total a Pagar</span>
               <span className="text-2xl font-bold text-indigo-600">
                 ${totalPrice.toFixed(2)}
               </span>

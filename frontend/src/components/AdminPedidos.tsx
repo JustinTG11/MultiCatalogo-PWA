@@ -71,14 +71,14 @@ const AdminPedidos = () => {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Pedidos</h1>
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Pedidos</h1>
         <select
           value={estado}
           onChange={(e) => {
             setEstado(e.target.value);
             setPage(1);
           }}
-          className="px-3 py-2.5 rounded-lg border border-slate-300 bg-white capitalize"
+          className="px-3 py-2.5 rounded-lg border border-slate-300 bg-white dark:bg-slate-900 capitalize"
         >
           <option value="">Todos los estados</option>
           {ESTADOS.map((e) => (
@@ -90,30 +90,30 @@ const AdminPedidos = () => {
       {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-200">{error}</div>}
 
       {loading ? (
-        <div className="text-center p-8 text-slate-500">Cargando pedidos...</div>
+        <div className="text-center p-8 text-slate-500 dark:text-slate-400">Cargando pedidos...</div>
       ) : pedidos.length === 0 ? (
-        <div className="text-center p-8 bg-white rounded-xl border border-slate-200 text-slate-500">No hay pedidos para mostrar.</div>
+        <div className="text-center p-8 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 text-slate-500 dark:text-slate-400">No hay pedidos para mostrar.</div>
       ) : (
         <>
           {/* Móvil: tarjetas */}
           <div className="md:hidden space-y-3">
             {pedidos.map((p) => (
-              <div key={p.id} className="bg-white rounded-xl border border-slate-200 p-4 space-y-2">
+              <div key={p.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="font-semibold text-slate-800">{p.numero}</p>
+                  <p className="font-semibold text-slate-800 dark:text-white">{p.numero}</p>
                   <EstadoBadge estado={p.estado} />
                 </div>
-                <p className="text-sm text-slate-500">{p.cliente.nombre} · {p.cliente.ciudad}</p>
-                <p className="text-sm font-bold text-slate-700">${p.total.toFixed(2)} · {new Date(p.fecha).toLocaleDateString()}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{p.cliente.nombre} · {p.cliente.ciudad}</p>
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">${p.total.toFixed(2)} · {new Date(p.fecha).toLocaleDateString()}</p>
                 <Acciones p={p} />
               </div>
             ))}
           </div>
 
           {/* Escritorio: tabla */}
-          <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-x-auto">
+          <div className="hidden md:block bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-600 text-left">
+              <thead className="bg-slate-50 text-slate-600 dark:text-slate-300 text-left">
                 <tr>
                   <th className="p-3">Pedido</th>
                   <th className="p-3">Cliente</th>
@@ -126,9 +126,9 @@ const AdminPedidos = () => {
               <tbody>
                 {pedidos.map((p) => (
                   <tr key={p.id} className="border-t border-slate-100">
-                    <td className="p-3 font-medium text-slate-800">{p.numero}</td>
-                    <td className="p-3 text-slate-600">{p.cliente.nombre}<br /><span className="text-xs text-slate-400">{p.cliente.email}</span></td>
-                    <td className="p-3 text-slate-600">{new Date(p.fecha).toLocaleDateString()}</td>
+                    <td className="p-3 font-medium text-slate-800 dark:text-white">{p.numero}</td>
+                    <td className="p-3 text-slate-600 dark:text-slate-300">{p.cliente.nombre}<br /><span className="text-xs text-slate-400">{p.cliente.email}</span></td>
+                    <td className="p-3 text-slate-600 dark:text-slate-300">{new Date(p.fecha).toLocaleDateString()}</td>
                     <td className="p-3 text-right">${p.total.toFixed(2)}</td>
                     <td className="p-3"><EstadoBadge estado={p.estado} /></td>
                     <td className="p-3"><Acciones p={p} /></td>

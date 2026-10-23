@@ -62,7 +62,7 @@ const DetalleProducto = () => {
 
   if (!producto) {
     return (
-      <div className="bg-white p-10 rounded-lg border border-slate-200 text-center">
+      <div className="bg-white dark:bg-slate-900 p-10 rounded-lg border border-slate-200 dark:border-slate-800 text-center">
         <p className="bg-red-50 text-red-600 p-3 rounded-lg border border-red-200 mb-4">
           {error || 'Producto no encontrado.'}
         </p>
@@ -103,7 +103,7 @@ const DetalleProducto = () => {
             src={imagenes[imagenActiva]}
             alt={producto.nombre}
             onClick={() => setLightboxAbierto(true)}
-            className="w-full h-80 md:h-96 object-cover rounded-xl border border-slate-200 cursor-zoom-in"
+            className="w-full h-80 md:h-96 object-cover rounded-xl border border-slate-200 dark:border-slate-800 cursor-zoom-in"
           />
           <div className="flex gap-3 mt-4">
             {imagenes.map((img, idx) => (
@@ -126,11 +126,11 @@ const DetalleProducto = () => {
           <p className="text-xs uppercase tracking-wide text-indigo-500 font-semibold">
             {producto.categoria}
           </p>
-          <h1 className="text-3xl font-bold text-slate-800 mt-1 mb-3">{producto.nombre}</h1>
+          <h1 className="text-3xl font-bold text-slate-800 dark:text-white mt-1 mb-3">{producto.nombre}</h1>
           <p className="text-3xl font-bold text-indigo-600 mb-6">
             ${producto.precio.toFixed(2)}
           </p>
-          <p className="text-slate-600 leading-relaxed mb-8">{producto.descripcion}</p>
+          <p className="text-slate-600 dark:text-slate-300 leading-relaxed mb-8">{producto.descripcion}</p>
 
           <button
             onClick={handleAddToCart}

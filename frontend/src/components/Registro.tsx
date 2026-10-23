@@ -13,7 +13,7 @@ interface LoginResponse {
 }
 
 const inputClass =
-  "w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition";
+  "w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition";
 
 const Registro = () => {
   const [searchParams] = useSearchParams();
@@ -73,11 +73,11 @@ const Registro = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4 py-8">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-md p-6 sm:p-8 border border-slate-200">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-800 px-4 py-8">
+      <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-xl shadow-md p-6 sm:p-8 border border-slate-200 dark:border-slate-800">
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-slate-900">Crear cuenta</h2>
-          <p className="text-slate-500 mt-2">Únete a MultiCatálogo</p>
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Crear cuenta</h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-2">Únete a MultiCatálogo</p>
         </div>
 
         {error && (
@@ -88,25 +88,25 @@ const Registro = () => {
 
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Nombre completo</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Nombre completo</label>
             <input value={nombre} onChange={(e) => setNombre(e.target.value)} className={inputClass} autoComplete="name" />
             {campos.nombre && <p className="text-xs text-red-600 mt-1">{campos.nombre}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Correo electrónico</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Correo electrónico</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} autoComplete="email" />
             {campos.email && <p className="text-xs text-red-600 mt-1">{campos.email}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Contraseña</label>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} autoComplete="new-password" />
             {campos.password && <p className="text-xs text-red-600 mt-1">{campos.password}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
               Código de referido <span className="text-slate-400">(opcional)</span>
             </label>
             <input value={ref} onChange={(e) => setRef(e.target.value.toUpperCase())} className={`${inputClass} font-mono`} placeholder="Ej. LUIS" />
@@ -121,7 +121,7 @@ const Registro = () => {
           </button>
         </form>
 
-        <p className="text-center text-sm text-slate-500 mt-6">
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
           ¿Ya tienes cuenta?{" "}
           <Link to="/login" className="text-indigo-600 font-semibold hover:underline">
             Inicia sesión
