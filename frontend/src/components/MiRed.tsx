@@ -130,18 +130,30 @@ const MiRed = () => {
 
   useEffect(() => {
     let activo = true;
-    Promise.all([getRedMia(), getMisComisiones(), getMisLiquidaciones()])
-      .then(([r, c, l]) => {
+    (async () => {
+      try {
+        const r = await getRedMia();
         if (!activo) return;
         setRed(r);
-        setComis(c);
-        setCobros(l);
-        // Expandir primer nivel por defecto
         const ids = new Set<number>();
         (r.hijos ?? []).forEach((h) => ids.add(h.id));
         setExpanded(ids);
-      })
-      .catch((e: unknown) => activo && setError(e instanceof Error ? e.message : "No se pudo cargar la red"));
+      } catch (e: unknown) {
+        if (activo) setError(e instanceof Error ? e.message : "No se pudo cargar la red");
+      }
+      try {
+        const c = await getMisComisiones();
+        if (activo) setComis(c);
+      } catch {
+        if (activo) setComis({ comisiones: [], resumen: { pendiente: 0, pagada: 0, total: 0 } });
+      }
+      try {
+        const l = await getMisLiquidaciones();
+        if (activo) setCobros(l);
+      } catch {
+        if (activo) setCobros([]);
+      }
+    })();
     return () => {
       activo = false;
     };

@@ -1,6 +1,6 @@
 /**
- * Exporta un reporte a PDF usando la impresión del navegador
- * (Sin dependencias: el usuario elige "Guardar como PDF" en el diálogo).
+ * Exporta un reporte a PDF vía diálogo de impresión del navegador.
+ * Usa Blob URL (más fiable que window.open + document.write).
  */
 
 export interface ColumnaPDF {
@@ -37,33 +37,56 @@ export function exportarPDF(opts: {
     )
     .join("");
 
-  const tbody = filas
-    .map((f, i) => {
-      const bg = i % 2 === 0 ? "#ffffff" : "#f8fafc";
-      const cells = columnas
-        .map(
-          (c) =>
-            `<td style="text-align:${c.align ?? "left"};padding:7px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#1e293b;">${escaparHtml(f[c.key])}</td>`
-        )
-        .join("");
-      return `<tr style="background:${bg}">${cells}</tr>`;
-    })
-    .join("");
+  const tbody =
+    filas.length === 0
+      ? `<tr><td colspan="${columnas.length}" style="padding:16px;color:#64748b;">No hay datos para mostrar.</td></tr>`
+      : filas
+          .map((f, i) => {
+            const bg = i % 2 === 0 ? "#ffffff" : "#f8fafc";
+            const cells = columnas
+              .map(
+                (c) =>
+                  `<td style="text-align:${c.align ?? "left"};padding:7px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#1e293b;">${escaparHtml(f[c.key])}</td>`
+              )
+              .join("");
+            return `<tr style="background:${bg}">${cells}</tr>`;
+          })
+          .join("");
 
   const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>${escaparHtml(titulo)}</title>
   <style>
-    @page { margin: 16mm; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #0f172a; margin: 0; padding: 24px; }
-    .brand { display:flex; align-items:center; gap:12px; margin-bottom: 8px; }
-    .logo { width:36px; height:36px; border-radius:10px; background: linear-gradient(135deg,#6366f1,#9333ea); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; }
-    h1 { margin: 0; font-size: 20px; }
-    .meta { color:#64748b; font-size:12px; margin: 4px 0 18px; }
-    table { width:100%; border-collapse:collapse; }
-    .foot { margin-top: 18px; font-size:11px; color:#94a3b8; }
+    @page { margin: 14mm; size: A4; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: #0f172a;
+      margin: 0;
+      padding: 24px;
+      background: #fff;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+    .logo {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #6366f1, #9333ea);
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; flex-shrink: 0;
+    }
+    h1 { margin: 0; font-size: 20px; color: #0f172a; }
+    .meta { color: #64748b; font-size: 12px; margin: 4px 0 18px; }
+    table { width: 100%; border-collapse: collapse; }
+    .foot { margin-top: 16px; font-size: 11px; color: #94a3b8; }
+    .actions { margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      padding: 10px 16px; border: 0; border-radius: 8px;
+      font-weight: 600; cursor: pointer; font-size: 14px;
+    }
+    .btn-primary { background: #4f46e5; color: #fff; }
+    .btn-secondary { background: #e2e8f0; color: #0f172a; }
     @media print {
       body { padding: 0; }
       .no-print { display: none !important; }
@@ -75,36 +98,43 @@ export function exportarPDF(opts: {
     <div class="logo">MC</div>
     <div>
       <h1>${escaparHtml(titulo)}</h1>
-      <div class="meta">${escaparHtml(subtitulo ?? "")} · Generado: ${escaparHtml(fecha)} · MultiCatálogo</div>
+      <div class="meta">${escaparHtml(subtitulo ?? "MultiCatálogo")} · Generado: ${escaparHtml(fecha)}</div>
     </div>
   </div>
-  ${
-    filas.length === 0
-      ? `<p style="color:#64748b">No hay datos para mostrar.</p>`
-      : `<table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>
-         <p class="foot">${filas.length} registro(s)</p>`
-  }
-  <p class="no-print" style="margin-top:24px">
-    <button onclick="window.print()" style="padding:10px 16px;background:#4f46e5;color:#fff;border:0;border-radius:8px;font-weight:600;cursor:pointer">
-      Imprimir / Guardar como PDF
-    </button>
-    <button onclick="window.close()" style="padding:10px 16px;margin-left:8px;background:#e2e8f0;border:0;border-radius:8px;cursor:pointer">
-      Cerrar
-    </button>
-  </p>
+  <table>
+    <thead><tr>${thead}</tr></thead>
+    <tbody>${tbody}</tbody>
+  </table>
+  <p class="foot">${filas.length} registro(s)</p>
+  <div class="actions no-print">
+    <button class="btn btn-primary" type="button" onclick="window.print()">Imprimir / Guardar como PDF</button>
+    <button class="btn btn-secondary" type="button" onclick="window.close()">Cerrar</button>
+  </div>
   <script>
-    // Abre el diálogo de impresión al cargar (el usuario puede elegir "Guardar como PDF")
-    setTimeout(function(){ window.print(); }, 300);
+    window.onload = function () {
+      setTimeout(function () { window.print(); }, 400);
+    };
   </script>
 </body>
 </html>`;
 
-  const w = window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, "_blank");
+
   if (!w) {
-    alert("Permite ventanas emergentes para exportar el PDF.");
+    // Pop-up bloqueado: descarga el HTML para que el usuario lo abra
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = (opts.nombreArchivo ?? titulo.replace(/\s+/g, "_").toLowerCase()) + ".html";
+    a.click();
+    alert(
+      "El navegador bloqueó la ventana emergente. Se descargó un HTML: ábrelo y usa Ctrl+P → Guardar como PDF."
+    );
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
     return;
   }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
+
+  // Liberar el blob cuando se cierre la pestaña (o a los 2 min)
+  setTimeout(() => URL.revokeObjectURL(url), 120_000);
 }
